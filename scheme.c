@@ -1834,12 +1834,8 @@ static char *readstr_upto(scheme *sc, char *delim) {
          }
     }
 
-    if (i == sizeof(sc->strbuff) + 2 && sc->strbuff[i - 2] == '\\') {
-        sc->strbuff[i] = 0;
-    } else {
-        backchar(sc, sc->strbuff[i]);
-        sc->strbuff[i] = '\0';
-    }
+    backchar(sc, sc->strbuff[i]);
+    sc->strbuff[i] = 0;
 
     return sc->strbuff;
 }
