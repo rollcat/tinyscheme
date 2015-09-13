@@ -17,6 +17,7 @@ CFLAGS   = -std=gnu11  -fpic -Wall -Wextra -Wpedantic -Werror -Wfatal-errors \
            ${OPT_FLAGS} ${INCS} ${CPPFLAGS}
 LDFLAGS  = -static -s ${LIBS}
 
+SCM = ${shell find . -name "*.scm"}
 SRC = dynload.c scheme.c
 HDR = dynload.h opdefines.h scheme-private.h scheme.h
 OBJ = ${SRC:.c=.o}
@@ -34,6 +35,7 @@ autofmt:
 		--indent-preproc-cond --indent-col1-comments --convert-tabs \
 		--max-code-length=72 --lineend=linux \
 		-R "*.c" "*.h"
+	emacs --script indent-scm.el -f main ${SCM}
 
 options:
 	@echo tinyscheme build options
