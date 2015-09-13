@@ -45,20 +45,20 @@
 #define INTERFACE
 
 enum {
-     TOK_EOF,
-     TOK_LPAREN,
-     TOK_RPAREN,
-     TOK_DOT,
-     TOK_ATOM,
-     TOK_QUOTE,
-     TOK_COMMENT,
-     TOK_DQUOTE,
-     TOK_BQUOTE,
-     TOK_COMMA,
-     TOK_ATMARK,
-     TOK_SHARP,
-     TOK_SHARP_CONST,
-     TOK_VEC
+    TOK_EOF,
+    TOK_LPAREN,
+    TOK_RPAREN,
+    TOK_DOT,
+    TOK_ATOM,
+    TOK_QUOTE,
+    TOK_COMMENT,
+    TOK_DQUOTE,
+    TOK_BQUOTE,
+    TOK_COMMA,
+    TOK_ATMARK,
+    TOK_SHARP,
+    TOK_SHARP_CONST,
+    TOK_VEC
 };
 
 #define BACKQUOTE '`'
@@ -1828,15 +1828,15 @@ static char *readstr_upto(scheme *sc, char *delim) {
     size_t i;
 
     for (i = 0; i < sizeof(sc->strbuff); i++) {
-         sc->strbuff[i] = inchar(sc);
-         if (is_one_of(delim, sc->strbuff[i])) {
-              break;
-         }
+        sc->strbuff[i] = inchar(sc);
+
+        if (is_one_of(delim, sc->strbuff[i])) {
+            break;
+        }
     }
 
     backchar(sc, sc->strbuff[i]);
     sc->strbuff[i] = 0;
-
     return sc->strbuff;
 }
 
@@ -2520,7 +2520,6 @@ static pointer find_slot_in_env(scheme *sc, pointer env, pointer hdl,
                                 int all) {
     pointer x, y;
     int location;
-
     y = NULL;
 
     for (x = env; x != sc->NIL; x = cdr(x)) {
@@ -4688,10 +4687,10 @@ static pointer opexe_5(scheme *sc, enum scheme_opcodes op) {
             }
 
         case TOK_RPAREN:
-             Error_0(sc, "syntax error: unexpected RPAREN");
+            Error_0(sc, "syntax error: unexpected RPAREN");
 
         default:
-             Error_0(sc, "syntax error: illegal token");
+            Error_0(sc, "syntax error: illegal token");
         }
 
         break;

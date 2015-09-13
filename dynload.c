@@ -84,11 +84,10 @@ static HMODULE dl_attach(const char *module) {
 static FARPROC dl_proc(HMODULE mo, const char *proc) {
     const char *errmsg;
     FARPROC fp;
-
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
     fp = (FARPROC)dlsym(mo, proc);
-    #pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
 
     if ((errmsg = dlerror()) == 0) {
         return fp;
