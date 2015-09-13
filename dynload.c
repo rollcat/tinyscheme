@@ -21,7 +21,9 @@ static void make_init_fn(const char *name, char *init_fn);
 #else
 typedef void *HMODULE;
 typedef void (*FARPROC)();
-#define SUN_DL
+#ifndef SUN_DL
+# define SUN_DL
+#endif
 #include <dlfcn.h>
 #endif
 
@@ -81,7 +83,12 @@ static HMODULE dl_attach(const char *module) {
 
 static FARPROC dl_proc(HMODULE mo, const char *proc) {
     const char *errmsg;
-    FARPROC fp = (FARPROC)dlsym(mo, proc);
+    FARPROC fp;
+
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wpedantic"
+    fp = (FARPROC)dlsym(mo, proc);
+    #pragma GCC diagnostic pop
 
     if ((errmsg = dlerror()) == 0) {
         return fp;
@@ -92,7 +99,7 @@ static FARPROC dl_proc(HMODULE mo, const char *proc) {
     return 0;
 }
 
-static void dl_detach(HMODULE mo) {
+static void __attribute__((unused)) dl_detach(HMODULE mo) {
     (void)dlclose(mo);
 }
 #endif
@@ -147,10 +154,3 @@ static void make_init_fn(const char *name, char *init_fn) {
     strcpy(init_fn, "init_");
     strcat(init_fn, p);
 }
-
-
-/*
-Local variables:
-c-file-style: "k&r"
-End:
-*/

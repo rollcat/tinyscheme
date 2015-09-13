@@ -1,5 +1,7 @@
 /* T I N Y S C H E M E    1 . 4 1
- *   Dimitrios Souflis (dsouflis@acm.org)
+ * Copyright (c) 1989, Atsushi Moriwaki <moriwaki@kurims.kurims.kyoto-u.ac.jp>
+ * Copyright (c) 2000, Dimitrios Souflis <dsouflis@acm.org>
+ * Copyright (c) 2015, Kamil Cholewinski <harry666t@gmail.com>
  *   Based on MiniScheme (original credits follow)
  * (MINISCM)               coded by Atsushi Moriwaki (11/5/1989)
  * (MINISCM)           E-MAIL :  moriwaki@kurims.kurims.kyoto-u.ac.jp
@@ -30,6 +32,7 @@
 #include <limits.h>
 #include <float.h>
 #include <ctype.h>
+#include <assert.h>
 
 #if USE_STRCASECMP
 #include <strings.h>
@@ -41,23 +44,25 @@
 /* Used for documentation purposes, to signal functions in 'interface' */
 #define INTERFACE
 
-#define TOK_EOF     (-1)
-#define TOK_LPAREN  0
-#define TOK_RPAREN  1
-#define TOK_DOT     2
-#define TOK_ATOM    3
-#define TOK_QUOTE   4
-#define TOK_COMMENT 5
-#define TOK_DQUOTE  6
-#define TOK_BQUOTE  7
-#define TOK_COMMA   8
-#define TOK_ATMARK  9
-#define TOK_SHARP   10
-#define TOK_SHARP_CONST 11
-#define TOK_VEC     12
+enum {
+     TOK_EOF,
+     TOK_LPAREN,
+     TOK_RPAREN,
+     TOK_DOT,
+     TOK_ATOM,
+     TOK_QUOTE,
+     TOK_COMMENT,
+     TOK_DQUOTE,
+     TOK_BQUOTE,
+     TOK_COMMA,
+     TOK_ATMARK,
+     TOK_SHARP,
+     TOK_SHARP_CONST,
+     TOK_VEC
+};
 
 #define BACKQUOTE '`'
-#define DELIMITERS  "()\";\f\t\v\n\r "
+#define DELIMITERS  "()[]{}\";\f\t\v\n\r "
 
 /*
  *  Basic memory allocation units
@@ -679,7 +684,7 @@ static int alloc_cellseg(scheme *sc, int n) {
     char *cp;
     long i;
     int k;
-    int adj = ADJ;
+    size_t adj = ADJ;
 
     if (adj < sizeof(struct cell)) {
         adj = sizeof(struct cell);
@@ -1820,16 +1825,20 @@ INTERFACE void putcharacter(scheme *sc, int c) {
 
 /* read characters up to delimiter, but cater to character constants */
 static char *readstr_upto(scheme *sc, char *delim) {
-    char *p = sc->strbuff;
+    size_t i;
 
-    while ((p - sc->strbuff < sizeof(sc->strbuff)) &&
-            !is_one_of(delim, (*p++ = inchar(sc))));
+    for (i = 0; i < sizeof(sc->strbuff); i++) {
+         sc->strbuff[i] = inchar(sc);
+         if (is_one_of(delim, sc->strbuff[i])) {
+              break;
+         }
+    }
 
-    if (p == sc->strbuff + 2 && p[-2] == '\\') {
-        *p = 0;
+    if (i == sizeof(sc->strbuff) + 2 && sc->strbuff[i - 2] == '\\') {
+        sc->strbuff[i] = 0;
     } else {
-        backchar(sc, p[-1]);
-        *--p = '\0';
+        backchar(sc, sc->strbuff[i]);
+        sc->strbuff[i] = '\0';
     }
 
     return sc->strbuff;
@@ -1837,7 +1846,7 @@ static char *readstr_upto(scheme *sc, char *delim) {
 
 /* read string expression "xxx...xxx" */
 static pointer readstrexp(scheme *sc) {
-    char *p = sc->strbuff;
+    size_t i = 0;
     int c;
     int c1 = 0;
     enum { st_ok, st_bsl, st_x1, st_x2, st_oct1, st_oct2 } state = st_ok;
@@ -1845,7 +1854,7 @@ static pointer readstrexp(scheme *sc) {
     for (;;) {
         c = inchar(sc);
 
-        if (c == EOF || p - sc->strbuff > sizeof(sc->strbuff) - 1) {
+        if (c == EOF || i >= sizeof(sc->strbuff)) {
             return sc->F;
         }
 
@@ -1857,11 +1866,12 @@ static pointer readstrexp(scheme *sc) {
                 break;
 
             case '"':
-                *p = 0;
-                return mk_counted_string(sc, sc->strbuff, p - sc->strbuff);
+                sc->strbuff[i] = 0;
+                return mk_counted_string(sc, sc->strbuff, i);
 
             default:
-                *p++ = c;
+                sc->strbuff[i] = c;
+                i++;
                 break;
             }
 
@@ -1888,27 +1898,32 @@ static pointer readstrexp(scheme *sc) {
                 break;
 
             case 'n':
-                *p++ = '\n';
+                sc->strbuff[i] = '\n';
+                i++;
                 state = st_ok;
                 break;
 
             case 't':
-                *p++ = '\t';
+                sc->strbuff[i] = '\t';
+                i++;
                 state = st_ok;
                 break;
 
             case 'r':
-                *p++ = '\r';
+                sc->strbuff[i] = '\r';
+                i++;
                 state = st_ok;
                 break;
 
             case '"':
-                *p++ = '"';
+                sc->strbuff[i] = '"';
+                i++;
                 state = st_ok;
                 break;
 
             default:
-                *p++ = c;
+                sc->strbuff[i] = c;
+                i++;
                 state = st_ok;
                 break;
             }
@@ -1929,7 +1944,8 @@ static pointer readstrexp(scheme *sc) {
                 if (state == st_x1) {
                     state = st_x2;
                 } else {
-                    *p++ = c1;
+                    sc->strbuff[i] = c1;
+                    i++;
                     state = st_ok;
                 }
             } else {
@@ -1941,7 +1957,8 @@ static pointer readstrexp(scheme *sc) {
         case st_oct1:
         case st_oct2:
             if (c < '0' || c > '7') {
-                *p++ = c1;
+                sc->strbuff[i] = c1;
+                i++;
                 backchar(sc, c);
                 state = st_ok;
             } else {
@@ -1953,7 +1970,8 @@ static pointer readstrexp(scheme *sc) {
                 if (state == st_oct1)
                     state = st_oct2;
                 else {
-                    *p++ = c1;
+                    sc->strbuff[i] = c1;
+                    i++;
                     state = st_ok;
                 }
             }
@@ -2018,9 +2036,13 @@ static int token(scheme *sc) {
         return (TOK_EOF);
 
     case '(':
+    case '[':
+    case '{':
         return (TOK_LPAREN);
 
     case ')':
+    case ']':
+    case '}':
         return (TOK_RPAREN);
 
     case '.':
@@ -2503,6 +2525,8 @@ static pointer find_slot_in_env(scheme *sc, pointer env, pointer hdl,
     pointer x, y;
     int location;
 
+    y = NULL;
+
     for (x = env; x != sc->NIL; x = cdr(x)) {
         if (is_vector(car(x))) {
             location = hash_fn(symname(hdl), ivalue_unchecked(car(x)));
@@ -2527,6 +2551,7 @@ static pointer find_slot_in_env(scheme *sc, pointer env, pointer hdl,
     }
 
     if (x != sc->NIL) {
+        assert(y != NULL);
         return car(y);
     }
 
@@ -2580,7 +2605,8 @@ static INLINE void new_slot_in_env(scheme *sc, pointer variable,
     new_slot_spec_in_env(sc, sc->envir, variable, value);
 }
 
-static INLINE void set_slot_in_env(scheme *sc, pointer slot,
+static INLINE void set_slot_in_env(scheme *sc __attribute__((unused)),
+                                   pointer slot,
                                    pointer value) {
     cdr(slot) = value;
 }
@@ -2822,6 +2848,7 @@ static pointer opexe_0(scheme *sc, enum scheme_opcodes op) {
             dump_stack_reset(sc);
             putstr(sc, "\n");
             putstr(sc, prompt);
+            fflush(sc->outport->_object._port->rep.stdio.file);
         }
 
         /* Set up another iteration of REPL */
@@ -4077,6 +4104,10 @@ static pointer opexe_3(scheme *sc, enum scheme_opcodes op) {
         case OP_GEQ:
             comp_func = num_ge;
             break;
+
+        default:
+            /* make compiler happy */
+            Error_0(sc, "This should never happen");
         }
 
         x = sc->args;
@@ -4376,6 +4407,10 @@ static pointer opexe_4(scheme *sc, enum scheme_opcodes op) {
         case OP_OPEN_INOUTFILE:
             prop = port_input | port_output;
             break;
+
+        default:
+            /* make compiler happy */
+            Error_0(sc, "This should never happen");
         }
 
         p = port_from_filename(sc, strvalue(car(sc->args)), prop);
@@ -4402,6 +4437,10 @@ static pointer opexe_4(scheme *sc, enum scheme_opcodes op) {
         case OP_OPEN_INOUTSTRING:
             prop = port_input | port_output;
             break;
+
+        default:
+            /* make compiler happy */
+            Error_0(sc, "This should never happen");
         }
 
         p = port_from_string(sc, strvalue(car(sc->args)),
@@ -4473,6 +4512,10 @@ static pointer opexe_4(scheme *sc, enum scheme_opcodes op) {
 
     case OP_CURR_ENV: /* current-environment */
         s_return(sc, sc->envir);
+
+    default:
+        snprintf(sc->strbuff, STRBUFFSIZE, "%d: illegal operator", sc->op);
+        Error_0(sc, sc->strbuff);
     }
 
     return sc->T;
@@ -4648,8 +4691,11 @@ static pointer opexe_5(scheme *sc, enum scheme_opcodes op) {
                 s_return(sc, x);
             }
 
+        case TOK_RPAREN:
+             Error_0(sc, "syntax error: unexpected RPAREN");
+
         default:
-            Error_0(sc, "syntax error: illegal token");
+             Error_0(sc, "syntax error: illegal token");
         }
 
         break;
@@ -4879,7 +4925,7 @@ static pointer opexe_6(scheme *sc, enum scheme_opcodes op) {
 typedef pointer(*dispatch_func)(scheme *, enum scheme_opcodes);
 
 typedef int (*test_predicate)(pointer);
-static int is_any(pointer p) {
+static int is_any(pointer p __attribute__((unused))) {
     return 1;
 }
 
@@ -5419,7 +5465,8 @@ void scheme_load_named_file(scheme *sc, FILE *fin,
 
     if (fin != stdin && filename)
         sc->load_stack[0].rep.stdio.filename = store_string(sc,
-                                               strlen(filename), filename, 0);
+                                               strlen(filename),
+                                               filename, 0);
 
     #endif
     sc->inport = sc->loadport;
@@ -5557,7 +5604,7 @@ int MacTS_main(int argc, char **argv) {
 int main(int argc, char **argv) {
 #endif
     scheme sc;
-    FILE *fin;
+    FILE *fin = NULL;
     char *file_name = InitFile;
     int retcode;
     int isfile = 1;
@@ -5657,9 +5704,3 @@ int main(int argc, char **argv) {
 }
 
 #endif
-
-/*
-Local variables:
-c-file-style: "k&r"
-End:
-*/
