@@ -586,6 +586,8 @@
             ,@(cdr form)
             (current-environment))))
 
+(define package make-environment)
+
 (define-macro (eval-polymorphic x . envl)
   (display envl)
   (let* ((env (if (null? envl) (current-environment) (eval (car envl))))
