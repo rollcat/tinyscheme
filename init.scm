@@ -714,4 +714,114 @@
                       (not (cond-eval (cadr condition)))))
            (else (error "cond-expand : unknown operator" (car condition)))))))
 
+(define (repr x)
+  "External string representation of an object"
+  (let ((p (open-output-string)))
+    (write x p)
+    (let ((s (get-output-string p)))
+      (close-output-port p)
+      s)))
+
+(define-macro (assert expr)
+  "Evaluate expr and signal an error if it evaluated to #f"
+  (let ((got (gensym)))
+    `(let ((,got ,expr))
+       (unless ,got
+         (error (string-append "assert: " (repr ',expr) "\n"))))))
+
+(define-macro (assert-equal? expected expr)
+  "Evaluate expr as got and signal an error unless got equal? to expected"
+  (let ((got (gensym)))
+    `(let ((,got ,expr))
+       (unless (equal? ,expected ,got)
+         (error (string-append "assert-equal?: expected: " (repr ,expected)
+                               " got: " (repr ,got) "\n"))))))
+
+(define (print . xs)
+  "Print each element in xs, separated by a space; end with a newline"
+  ;; TODO once we have kwargs, make sep and end into parameters
+  (let ((sep " ")
+        (end "\n"))
+    (for-each (lambda (x)
+                (display x)
+                (display sep))
+              xs)
+    (display end)))
+
+(define (string-join sep . parts)
+  "Join parts using sep"
+  (unless (list? parts)
+    (error "Expected list"))
+  (cond ((null? parts) "")
+        ((null? (cdr parts)) (car parts))
+        (#t (string-append (car parts) sep
+                           (apply string-join sep (cdr parts))))))
+
+
+(assert #t)
+(assert (not #f))
+(assert-equal? "a" (string-join "" "a"))
+(assert-equal? "ab" (string-join "" "a" "b"))
+(assert-equal? "a/b" (string-join "/" "a" "b"))
+(assert-equal? "a/b/c" (string-join "/" "a" "b" "c"))
+
+(define (string-prefix s count)
+    (substring s 0 count))
+
+(define (string-suffix s count)
+  (let* ((l (string-length s))
+         (start (- l count)))
+    (substring s start l)))
+
+(assert-equal? "ab" (string-prefix "abcd" 2))
+(assert-equal? "cd" (string-suffix "abcd" 2))
+
+(define (string-starts-with? s prefix)
+  "True if s starts with prefix"
+  (unless (and (string? prefix)
+               (string? s))
+    (error "Expected strings"))
+  (let ((prefix-length (string-length prefix))
+        (s-length (string-length prefix)))
+    (cond ((> prefix-length s-length) #f)
+          (#t (let ((s-prefix (string-prefix s prefix-length)))
+                (equal? s-prefix prefix))))))
+
+(assert (string-starts-with? "" ""))
+(assert (string-starts-with? "a" ""))
+(assert (string-starts-with? "a" "a"))
+(assert (string-starts-with? "abc" "a"))
+(assert (string-starts-with? "abc" "ab"))
+
+(define (string-ends-with? s suffix)
+  "True if s ends with suffix"
+  (unless (and (string? suffix)
+               (string? s))
+    (error "Expected strings"))
+  (let ((suffix-length (string-length suffix))
+        (s-length (string-length suffix)))
+    (cond ((> suffix-length s-length) #f)
+          (#t (let ((s-suffix (string-suffix s suffix-length)))
+                (equal? s-suffix suffix))))))
+
+(assert (string-ends-with? "" ""))
+(assert (string-ends-with? "a" ""))
+(assert (string-ends-with? "a" "a"))
+(assert (string-ends-with? "abc" "c"))
+(assert (string-ends-with? "abc" "bc"))
+
+(define (path-absolute? path)
+  (string-starts-with? path "/"))
+
+(assert (path-absolute? "/"))
+(assert (path-absolute? "/usr"))
+(assert (path-absolute? "/home"))
+(assert (path-absolute? "/var/www/index.html/../../../etc/passwd"))
+
+(define (path-relative? path)
+  (not (string-starts-with? path "/" )))
+
+(assert (path-relative? "."))
+(assert (path-relative? "./../foo"))
+
 (gc-verbose #f)
