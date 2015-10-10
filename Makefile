@@ -21,11 +21,21 @@ SCM = ${shell find . -name "*.scm"}
 SRC = dynload.c scheme.c
 HDR = dynload.h opdefines.h scheme-private.h scheme.h
 OBJ = ${SRC:.c=.o}
+SO  = libtinyscheme.so
+A   = libtinyscheme.a
+EXE = scheme
 
-all: options libtinyscheme.so libtinyscheme.a scheme
+all: options ${SO} ${A} ${EXE}
 
-test: scheme
-	./scheme -1 test.scm
+test: test.style test.scheme
+
+test.style: ${SRC} ${HDR} ${SCM}
+	@echo test.style
+	@./test-style ${SRC} ${HDR} ${SCM}
+
+test.scheme: ${EXE} test.scm
+	@echo test.scheme
+	@./scheme -1 test.scm
 
 autofmt:
 	astyle \
