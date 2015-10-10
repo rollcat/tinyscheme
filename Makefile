@@ -1,6 +1,6 @@
 FEATURES ?= -DSUN_DL=1 -DUSE_DL=1 -DUSE_MATH=1 -DUSE_ASCII_NAMES=1
 
-CC = musl-gcc
+CC ?= musl-gcc
 AR = ar crs
 
 INCS = -I.
@@ -12,9 +12,9 @@ else
 OPT_FLAGS = -Os
 endif
 
-CPPFLAGS = ${FEATURES}
 CFLAGS   = -std=gnu11  -fpic -Wall -Wextra -Wpedantic -Werror -Wfatal-errors \
            ${OPT_FLAGS} ${INCS} ${CPPFLAGS}
+CPPFLAGS = ${FEATURES}
 LDFLAGS  = -static -s ${LIBS}
 
 SCM = ${shell find . -name "*.scm"}

@@ -1,0 +1,13 @@
+language: c
+
+addons:
+  apt:
+    packages:
+    - build-essential
+    - musl-tools
+
+compiler:
+- clang
+# - gcc  # disabled until Travis gets newer GCC
+
+script: make test
