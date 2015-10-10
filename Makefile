@@ -50,7 +50,7 @@ tags: TAGS
 TAGS: ${SRC} ${HDR}
 	etags ${SRC} ${HDR}
 
-%.o: %.c ${H_SRC}
+%.o: %.c ${HDR}
 	@echo CC $<
 	@${CC} -c ${CFLAGS} $<
 
