@@ -4608,8 +4608,12 @@ static pointer opexe_5(scheme *sc, enum scheme_opcodes op) {
         s_return(sc, sc->value);
 
     case OP_RDSEXPR:
+        /* parser guts */
         switch (sc->tok) {
         case TOK_EOF:
+            if (sc->nesting_stack[sc->file_i] > 0) {
+                Error_0(sc, "syntax error: unexpected EOF");
+            }
             s_return(sc, sc->EOF_OBJ);
 
         case TOK_VEC:
