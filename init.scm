@@ -748,6 +748,10 @@
               xs)
     (display end)))
 
+(define-macro (for vs xs . forms)
+  "Bind each value of xs to vs and evaluate forms"
+  `(map (lambda ,vs ,@forms) ,xs))
+
 (define (string-join sep . parts)
   "Join parts using sep"
   (unless (list? parts)
@@ -809,6 +813,39 @@
 (assert (string-ends-with? "a" "a"))
 (assert (string-ends-with? "abc" "c"))
 (assert (string-ends-with? "abc" "bc"))
+
+(define (in? el lst)
+  "True if el is present in lst"
+  (do ((lst lst (cdr lst))
+       (got #f (equal? (car lst) el)))
+      ((or got (null? lst)) got)))
+
+(assert (in? 1 '(3 2 1)))
+(assert (not (in? 1 '(2 3))))
+
+(define (uniq xs)
+  "Create a copy of xs with all elements unique; order unspecified"
+  (do ((seen (list))
+       (xs xs (cdr xs)))
+      ((null? xs) seen)
+    (let ((x (car xs)))
+      (unless (in? x seen)
+        (set! seen (cons x seen))))))
+
+(assert-equal? 0 (length (uniq '())))
+(assert-equal? 2 (length (uniq '(1 1 2 1 2 2))))
+(assert-equal? 3 (length (uniq '(1 2 2 3 3 3))))
+
+(define (enumerate xs)
+  "Return pairs of (i x) for consecutive i and each x in xs"
+  (do ((i 0 (+ i 1))
+       (xs xs (cdr xs))
+       (ps (list)))
+      ((null? xs) (reverse ps))
+    (set! ps (cons (list i (car xs)) ps))))
+
+(assert-equal? '() (enumerate '()))
+(assert-equal? '((0 "a") (1 "b")) (enumerate '("a" "b")))
 
 (define (path-absolute? path)
   (string-starts-with? path "/"))
