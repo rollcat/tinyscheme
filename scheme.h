@@ -46,7 +46,8 @@ extern "C" {
 
 /*
  * Leave it defined if you want continuations, and also for the Sharp Zaurus.
- * Undefine it if you only care about faster speed and not strict Scheme compatibility.
+ * Undefine it if you only care about faster speed and not strict
+ * Scheme compatibility.
  */
 #define USE_SCHEME_STACK
 
@@ -79,7 +80,8 @@ extern "C" {
 # define USE_PLIST 0
 #endif
 
-/* To force system errors through user-defined error handling (see *error-hook*) */
+/* To force system errors through user-defined error handling
+ * (see *error-hook*) */
 #ifndef USE_ERROR_HOOK
 # define USE_ERROR_HOOK 1
 #endif

@@ -91,7 +91,7 @@ struct scheme {
     struct cell _HASHF;
     pointer F;               /* special cell representing #f */
     struct cell _EOF_OBJ;
-    pointer EOF_OBJ;         /* special cell representing end-of-file object */
+    pointer EOF_OBJ;         /* special cell representing EOF object */
     pointer oblist;          /* pointer to symbol table */
     pointer global_env;      /* pointer to global environment */
     pointer c_nest;          /* stack for nested calls from C */
@@ -118,7 +118,7 @@ struct scheme {
     pointer loadport;
 
 #define MAXFIL 64
-    port load_stack[MAXFIL];     /* Stack of open files for port -1 (LOADing) */
+    port load_stack[MAXFIL];     /* Stack of open files for port -1 (LOAD) */
     int nesting_stack[MAXFIL];
     int file_i;
     int nesting;
