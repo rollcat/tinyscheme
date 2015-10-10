@@ -4975,7 +4975,7 @@ typedef struct {
 static op_code_info dispatch_table[] = {
 #define _OP_DEF(A,B,C,D,E,OP) {A,B,C,D,E},
 #include "opdefines.h"
-    { 0 }
+    { 0, 0, 0, 0, 0 }
 };
 
 static const char *procname(pointer x) {
